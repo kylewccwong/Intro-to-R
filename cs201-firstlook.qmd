@@ -30,9 +30,9 @@ Go to Tools \> Global Options \> Appearance to select a color scheme you like.
 
 I also personally like to enable these:
 
-- Tools \> Global Options \> Code \> Insert matching parens/quotes
+-   Tools \> Global Options \> Code \> Insert matching parens/quotes
 
-- Tools \> Global Options \> Console \> Show syntax highlighting in console input
+-   Tools \> Global Options \> Console \> Show syntax highlighting in console input
 
 I don't recommend rearranging your pane layout at this time.
 
@@ -40,14 +40,73 @@ I don't recommend rearranging your pane layout at this time.
 
 Try running some code
 
+### Load Library
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+```
+
+### Some Scripting
+
+```{r}
+quiz1 <- 88
+
+quiz2 <- 94
+
+quiz3 <- 79
+
+quiz1 
+
+mean(quiz1 + quiz2 + quiz3) #adds everything up
+mean(quiz1, quiz2, quiz3) #only returns the first arg
+
+mean(c(quiz1, quiz2, quiz3)) # CORRECT WAY, c() means combine or concatenate
+
+list <- c(quiz1, quiz2, quiz3)
+
+mean(list)
+
+average <- mean(list)
+
+quiz3 <- 99
+quiz3
+
+average
+
+list <- c(quiz1, quiz2, quiz3)
+average <- mean(list)
+average
+round(average, 2)
+```
+
+### More Scores!
+
 ```{r}
 
+scores <- c(88, 94,79, 91,85)
+scores
 
+mean(scores)
+min(scores)
+max(scores)
+length(scores)
+
+summary(scores)
+### remember summary scores 
+
+students <- c("a", "b", "c", "d", "e")
+students
+
+#bar plot
+barplot(scores, names.arg = students)
 ```
 
 ## Introducing `ggplot2`
 
 ```{r}
+
 
 ```
 
@@ -56,6 +115,8 @@ Try running some code
 What result do you expect when you run this expression?
 
 ```{r}
+
+
 
 ```
 
