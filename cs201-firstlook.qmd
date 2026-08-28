@@ -100,12 +100,71 @@ students <- c("a", "b", "c", "d", "e")
 students
 
 #bar plot
-barplot(scores, names.arg = students)
+barplot(scores, names.arg = students, ylim = c(0,100), main = "Title", xlab = "pupils", y = "what they got")
 ```
 
 ## Introducing `ggplot2`
 
+#### Make a data frame
+
 ```{r}
+
+grades_df <- data.frame(student = students, score = scores)
+
+grades_df
+
+summary(grades_df)
+
+nrow(grades_df) #number of rows
+
+ncol(grades_df) #number of columns
+
+dim(grades_df) #number of data frame dimension
+
+
+```
+
+#### Try ggplot
+
+```{r}
+ggplot(data = grades_df, aes(x = student, y = score)) #if run alone this is foundation
+
+ggplot(data = grades_df, aes(x = reorder(student, -score), y = score, group = 1)) +
+  geom_col(fill = "steelblue") + 
+  geom_point() + 
+  geom_line() +
+  theme_minimal() + 
+  labs(title = "Best Graph Ever", 
+       subtitle = "some quiz scores",
+       xlab = "da students",
+       ylab = "what they scored on their quiz")
+
+# group in the aes() connects the line geom_line()
+#reorder(after the x puts it in descending order)
+
+```
+
+#### Mutate the Dataframe
+
+```{r}
+library(tidyverse)
+grades_df <- grades_df %>% 
+  mutate(study_hours = c(2,5,1,4,3))
+
+
+#pipe operator (command-shift-m)
+```
+
+#### Make a scatterplot
+
+```{r}
+ggplot(data = grades_df, aes(x = study_hours, y = scores)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme_minimal() +
+  labs(title = "The Impact of Studying on Test Scores", subtitle = "by Kyle Wong", x = "Time Spent Studying", y = "Test Scores")
+
+##dont use fill for lines (use color instead), dont use reorder 
 
 
 ```
