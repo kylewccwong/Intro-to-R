@@ -63,6 +63,8 @@ penguins_data_from_package <- palmerpenguins::penguins
 
 raw_penguins_data_from_package <- palmerpenguins::penguins_raw
 
+## :: lets you reference a function in a package without loading the whole package
+## :: is a referencing palmer penguins and requesting penguins_raw?
 ```
 
 ### Option 3
@@ -121,6 +123,7 @@ Here is where the `janitor` package comes in handy!
 penguins_data <- penguins_data |> 
   clean_names()
 
+# clean_names makes the variables all lower case and turns the spaces into underscores
 ```
 
 Now all of our column names are clean and our dataframe is ready for analysis! snake_case is the default, but others (like camelCase) are available. See documentation.
@@ -132,15 +135,19 @@ The `skim()` function from the `skimr` package gives us a cool overview of the d
 ```{r, message=FALSE}
 
 summary(penguins_data)
-
+#will produce different outputs for each column because the difference in type
+# str columns will produce the N values, while int produces min, mean, med, max and quartile. quartiles are 4 equal parts
 
 head(penguins_data)
-#gives us preview for first few
+#gives us preview for first few, will default to first 6 rows
 #if you wanna see the first 10 rows: head(penguins_data, 10)
   #if you wanna see last 10 rows: tail(penguins_data, 10)
 
+# *****
 skim <- skimr::skim(penguins_data)
-
+#shorter version of summary that lets you save it as a df
+#turns variables(columns) from the og df into observations(rows)
+# and summarizes each 
 
 ```
 
@@ -219,14 +226,37 @@ The magic of `ggplot2` is simplicity and *customization* so let's customize, bas
 
 ```{r, message=FALSE, warning=FALSE}
 
+ggplot(data = penguins_data, aes(x = flipper_length_mm, fill = species)) +
+  geom_histogram(alpha = 0.5) +
+  scale_fill_manual(values = c("darkorange", "darkorchid", "cyan4"), name = "Penguin Species") +
+  theme_bw() + 
+  labs(title = "Palmer Penguins' Flipper Length",
+       subtitle = "Three Species observed on three islands in the Palmer Archipelago",
+       x = "Flipper Length(mm)",
+       y = "Number of Penguins")
 
+#fill in the ggplot() adds color
+#alpha adjust the color saturation of the bars
+#name in the scale_fill_manual lets you change the legend
+#
 
 ```
 
 Manually choosing colors is cool, but there are also color palettes available for us with `viridis`
 
+# Color Notes
+
 ```{r, message=FALSE}
 
+
+ggplot(data = penguins_data, aes(x = flipper_length_mm, fill = species)) +
+  geom_histogram(alpha = 0.5) +
+  scale_fill_viridis_d(option = "magma", name = "Penguin Species")
+  theme_bw() + 
+  labs(title = "Palmer Penguins' Flipper Length",
+       subtitle = "Three Species observed on three islands in the Palmer Archipelago",
+       x = "Flipper Length(mm)",
+       y = "Number of Penguins")
 
 
 ```
@@ -235,15 +265,38 @@ Let's investigate flipper length with another type of data viz: a box plot!
 
 ```{r, message=FALSE}
 
+ggplot(data = penguins_data, aes(x = species, y = flipper_length_mm, fill = species)) +
+  geom_boxplot() +
+  geom_jitter(size = 0.5) +
+ scale_fill_viridis_d(option = "magma", name = "Penguin Species") +
+  theme_bw() + 
+  labs(title = "Palmer Penguins' Flipper Length",
+       subtitle = "Three Species observed on three islands in the Palmer Archipelago",
+       x = "Flipper Length(mm)",
+       y = "Number of Penguins") +
+theme(axis.text.x = element_text(angle = 45, hjust =1), legend.position = "none") 
 
+#setup for the boxplot is the same as histogram
+#boxplot needs x and y axis though
+#geom jitter vs geom_point? might want to google the difference
 
+#size = ? to adjust point size 
 ```
 
 Again, let's customize! Add points for individual penguins.
 
 ```{r, message=FALSE}
 
-
+ggplot(data = penguins_data, aes(x = species, y = flipper_length_mm, fill = species)) +
+  geom_boxplot() +
+  geom_jitter(size = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("darkorange", "darkorchid", "cyan4"), name = "Penguin Species")+
+  labs(title = "Palmer Penguins' Flipper Length",
+       subtitle = "Three species observed on three islands in the Palmer
+       Archipelago", x = "Flipper Length (mm)", y = "Number of Penguins") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust =1), legend.position = "none") +
+  coord_flip()
 
 ```
 
@@ -251,7 +304,9 @@ Awesome! Let's take a look at flipper length and it's relationship to body mass
 
 ```{r, message=FALSE}
 
-
+ggplot(data = penguins_data, aes(x = flipper_length_mm, y = body_mass_g, color = species, shape = island)) +
+  geom_point() +
+  scale_shape_manual(values = c(1,2,13))
 
 ```
 
@@ -271,6 +326,14 @@ Cool! Let's add species to this plot. What about island?
 
 ```{r, message=FALSE, warning=FALSE}
 
+ggplot(penguins_data, aes(x = culmen_depth_mm, fill = species)) +
+  geom_histogram() +
+  theme_bw() +
+  scale_fill_viridis_d(name = "Penguin Species") +
+  labs(title = "Palmer Penguins Culmen Depth mm",
+       subtitle = "Three Species observed on three islands in the Palmer Archipelago", 
+       x = "Culmen Depth in mm",
+       y = "Number of Penguins")
 
 
 ```
@@ -281,7 +344,7 @@ Cool! Let's add species to this plot. What about island?
 
 ```{r, message=FALSE, warning=FALSE}
 
-
+ggplot(data = Penguins_data, aes(x = culmen_depth_mm, y = body_mass_g))
 
 ```
 
@@ -306,3 +369,13 @@ Cool! Let's add species to this plot. What about island?
 Remember the steps? Save, stage, commit, and push!
 
 A quick note: I check work between classes to make sure everyone is able to follow along and not encounter issues. If you ever have questions for me, feel free to type them directly into your qmd file, and I'll see it on GitHub! Just make sure it's clear (flag it somehow by using my name
+
+notes for me:
+
+getwd()
+
+list.files()
+
+setwd("data)
+
+ggplotly()
