@@ -180,6 +180,7 @@ Make a scatter plot of `mtcars` with `weight` on the x-axis and `mpg` on the y-a
 ggplot(data = mtcars, aes(x = wt, y = mpg)) +
   geom_point() +
   theme_minimal() +
+  theme_bw() +
   geom_smooth() + 
   labs(title = "Weight vs MPG", x = "Weight", y = "Miles per Gallon")
 
