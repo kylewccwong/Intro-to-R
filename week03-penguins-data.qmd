@@ -235,10 +235,11 @@ ggplot(data = penguins_data, aes(x = flipper_length_mm, fill = species)) +
        x = "Flipper Length(mm)",
        y = "Number of Penguins")
 
-#fill in the ggplot() adds color
-#alpha adjust the color saturation of the bars
-#name in the scale_fill_manual lets you change the legend
-#
+#fill in the ggplot() adds color for histogram*
+#alpha() adjusts the color saturation of the bars
+#name = in the scale_fill_manual lets you change the legend
+#theme_bw get rid of default gray background, theme_minimal lessons grid background
+#labs(title, subtitle, x, y)
 
 ```
 
@@ -274,13 +275,21 @@ ggplot(data = penguins_data, aes(x = species, y = flipper_length_mm, fill = spec
        subtitle = "Three Species observed on three islands in the Palmer Archipelago",
        x = "Flipper Length(mm)",
        y = "Number of Penguins") +
-theme(axis.text.x = element_text(angle = 45, hjust =1), legend.position = "none") 
+theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") 
 
 #setup for the boxplot is the same as histogram
-#boxplot needs x and y axis though
+#boxplot needs x and y axis rather than hist, which only needs x
 #geom jitter vs geom_point? might want to google the difference
+#order matters because if i did jitter before boxplot, the boxplot would block the view of some of the points
 
-#size = ? to adjust point size 
+#theme(axis) line
+# axis.text.x = means its targeting x axis
+# angle = 45 turns the variables on the x axis 45 degrees,
+# hjust=1 puts the oriented variables properly under the x axis tick mark
+# vjust is the y axis version of the hjust
+#legend.position = none | removes the legend, other options would be right, left, top, bottom, none
+
+#theme() WILL LIKELY BE IMPORTANT LATER
 ```
 
 Again, let's customize! Add points for individual penguins.
@@ -298,6 +307,8 @@ ggplot(data = penguins_data, aes(x = species, y = flipper_length_mm, fill = spec
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust =1), legend.position = "none") +
   coord_flip()
 
+##coord_flip good so you dont have to change integrity of the plot... manually changing x and y in aes() could disrupt the appearance of the plot
+
 ```
 
 Awesome! Let's take a look at flipper length and it's relationship to body mass
@@ -308,6 +319,10 @@ ggplot(data = penguins_data, aes(x = flipper_length_mm, y = body_mass_g, color =
   geom_point() +
   scale_shape_manual(values = c(1,2,13))
 
+#scale_shape_manual builds on the ggplot(shape = island).. since there are 3
+#islands we need 3 values in scale_shape_manual
+# the values in scale_shape_manual correspond to a different shape...
+#for example 1 might be a square, 2 might be a triangle, etc. 
 ```
 
 Cool! Let's add species to this plot. What about island?
