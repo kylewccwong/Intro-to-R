@@ -359,7 +359,15 @@ ggplot(penguins_data, aes(x = culmen_depth_mm, fill = species)) +
 
 ```{r, message=FALSE, warning=FALSE}
 
-ggplot(data = Penguins_data, aes(x = culmen_depth_mm, y = body_mass_g))
+ggplot(data = penguins_data, aes(x = culmen_depth_mm, y = body_mass_g, color = species)) + 
+  geom_point() +
+  theme_bw() +
+  labs(title = "Palmar Penguins: Culmen Depth v. Body Mass (g)",
+       subtitle = "by Kyle",
+       x = "culmen depth (mm)",
+       y = "body mass (g)", 
+       color = "Species")
+
 
 ```
 
@@ -376,6 +384,18 @@ ggplot(data = Penguins_data, aes(x = culmen_depth_mm, y = body_mass_g))
 ```{r, message=FALSE}
 
 
+plot <- ggplot(data = penguins_data, aes(x = species, y = flipper_length_mm, fill = species)) +
+  geom_boxplot() +
+  geom_jitter(size = 0.5) +
+  theme_bw() +
+  scale_fill_manual(values = c("darkorange", "darkorchid", "cyan4"), name = "Penguin Species")+
+  labs(title = "Palmer Penguins' Flipper Length",
+       subtitle = "Three species observed on three islands in the Palmer
+       Archipelago", x = "Flipper Length (mm)", y = "Number of Penguins") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust =1), legend.position = "none") +
+  coord_flip()
+
+ggplotly(plot)
 
 ```
 
