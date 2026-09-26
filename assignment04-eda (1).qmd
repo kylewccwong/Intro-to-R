@@ -1,0 +1,208 @@
+---
+title: "Assignment 4: Exploratory Data Analysis"
+author: "Your Name"
+date: "`r Sys.Date()`"
+format: html
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Overview
+
+Due: **Friday 9/25 11:59pm**
+
+In this assignment, you will practice Exploratory Data Analysis (EDA) by making plots from a **Kaggle dataset of your choice**.
+
+You will submit **at least 4 different plot types**, with short written interpretations for each.
+
+Part 1 is worth a total of 1 point, and Part 2 is worth 4 points (1 point for each plot, question, and interpretation).
+
+## Part 1: Get Your Data
+
+1.  Go to [Kaggle Datasets](https://www.kaggle.com/datasets), create an account, and choose a dataset that interests you. Ensure your data has:
+    1.  At least 4 variables
+    2.  At least one categorical and one continuous variable
+    3.  I recommend data that contains at least 50-100 observations
+    4.  Tip: Open the CSV on Kaggle first and skim the columns to check that it meets these requirements
+2.  Download the dataset as a CSV file.
+3.  Place the CSV in your class R project `data` folder.
+4.  Read it into R with `read_csv()`.
+
+```{r, message=FALSE}
+library(tidyverse)
+library(janitor)
+library(ggplot2)
+
+# mydata <- read_csv("data/your_dataset.csv")
+
+depression <- read_csv("data/mental_health_dataset.csv")
+
+depression <- clean_names(depression)
+```
+
+### Describe your data
+
+Data author: Anthony Therrien
+
+Link: <https://www.kaggle.com/datasets/mahdimashayekhi/mental-health>
+
+Description:
+
+Dataset analyzing health, lifestyle, and socioeconomic factors. Not much metadata-this is likely synthetic data used for learning models and predictive modeling.
+
+### Preview your data
+
+Use some of the strategies you've learned in this class or picked up elsewhere to summarize and quickly explore your data.
+
+```{r}
+
+head(depression)
+
+#first 6 observations
+view(head(depression))
+#use view() function to see all variables if they dont fit when using head
+
+summary(depression)
+#tells us about our variable
+#gives a summary of each variable in df
+#adjusts what it shows you depending on variable type
+
+
+glimpse(depression)
+#probably most useful(lists variable name, type, some cells)
+```
+
+### Summary stats
+
+Before you make plots, you must also:
+
+-   Show basic summaries of your dataset, including:
+
+    -   `count()` for categorical variables (to see category frequencies)
+
+    -   `mean()`, `median()`, `sd()`, `min()`, `max()` for at least one numeric variable
+
+    -   Remember to use `na.rm = TRUE` if you have missing values that affect summaries!
+
+#### How many na's are in my columns?
+
+```{r}
+
+colSums(is.na(depression))
+#lists each column and how many na's are in each 
+
+#IF I WANT TO BE EVEN MORE SAFE
+
+depression[depression == "N/A" | depression == "na" | depression == ""] <- NA
+depression <- na.omit(depression)
+
+#go into my depression df, in entire df and turn these variations of NA into NA (use unique() if you there are any other unusual variations and na.omit gets rid of all "NA")
+
+```
+
+#### 
+
+```{r}
+
+gender_count <- count(depression, gender)
+worker_count <- count(depression, employment_status)
+environment_count <- count(depression, work_environment)
+history_count <- count(depression, mental_health_history)
+self_help_count <- count(depression, seeks_treatment)
+risk_count <- count(depression, mental_health_risk)
+```
+
+```{r}
+depression_stats <- depression %>% 
+  summarise(mean = mean(depression_score),
+            median = median(depression_score),
+            sd = sd(depression_score),
+            min = min(depression_score),
+            max = max(depression_score))
+
+```
+
+Write 2–3 sentences here: What do the category counts tell you? What does the numeric summary show about spread, center, or outliers?
+
+Based on our depression_stats df, we can see that our mean and median are nearly identical showing the data is not skewed. The range of the depression_score is 0-30 and the standard deviation is 9. A std deviation of 9 for this range would be considered large, spreading out far beyond the mean.
+
+## Part 2: Visualize Your Data
+
+Create **at least 4 plots**, each of a different type. Your plots may share variables, but each one should answer a **different question** about your data. At least one plot must include a variable that isn't in the others.
+
+Each plot should have:
+
+-   A title and labeled axes
+
+-   A short interpretation (2-3 sentences) underneath
+
+    -   Sample interpretation: (boxplot of `price` by `cut` from `diamonds` data): *Ideal diamonds have the lowest median price, which is surprising since Ideal is the best cut. Every cut also has a lot of very expensive outliers. One possible reason for the low Ideal prices is that Ideal diamonds might be smaller on average, which I could check by plotting carat by cut.*
+
+Use the EDA Part 3 notes as your reference. Since this is an EDA assignment, your plots can look plain, but consider adding colors, themes, or interactivity for interpretability and visual appeal if you know how.
+
+### Plot 1
+
+```{r}
+
+ggplot(depression, aes(x = depression_score, y = productivity_score, color = mental_health_risk)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(vars(gender)) +
+  labs(title = "Depression vs. Productivity by Risk Level",
+       x = "Depression Score", y = "Productivity Score", color = "Mental Health Risk")
+```
+
+Question this plot answers: How does one's depression impact their productivity?
+
+To answer this question, I created a scatter plot to explore the relationship between depression and productivity. We can see a strong negative relationship between the variables. We further explored this relationship by categorizing by gender and saw minimal changes to our findings.
+
+### Plot 2
+
+```{r}
+
+ggplot(depression, aes(x = mental_health_risk, fill = seeks_treatment)) +
+  geom_bar(position = "fill") +
+  labs(title = "Share Seeking Treatment by Mental Health Risk",
+       x = "Mental Health Risk", y = "Proportion", fill = "Seeks Treatment")
+
+```
+
+Question this plot answers: Are people who carry higher mental health risks more likely to seek out care?
+
+Interpretation:
+
+Our mental health risk variable was factored which allowed us to see that there was a pretty similar likelihood across all mental health risks to seek treatment. We know this data is synthetic, but if data were real, we could gather that there may just be a general reluctance to seek out mental health care.
+
+### Plot 3
+
+```{r}
+
+ggplot(depression, aes(x = mental_health_risk, y = social_support_score, fill = gender)) +
+  geom_boxplot() +
+  labs(title = "Social Support by Mental Health Risk and Gender",
+       x = "Mental Health Risk", y = "Social Support Score", fill = "Gender")
+```
+
+Question this plot answers: Do people's social support scores differ depending on their mental health risk level?
+
+Interpretation: Once again, we have to wonder how much these results are driven by its synthetic nature, but we can interpret that there is a normal distribution across each mental health risk and gender group. The one outlier seems to lie in the prefer not to say group and on the low mental health risk group and intuitively kind of goes against what you'd think... if they are a lower mental health risk, you might assume that their social support score is higher than average.
+
+### Plot 4
+
+```{r}
+
+ggplot(depression, aes(x = stress_level, color = work_environment)) +
+  geom_freqpoly(binwidth = 2) +
+  labs(title = "Exploring Work Setting's Effect on Stress",
+       x = "Stress Level", y = "Count", color = "Work Environment")
+```
+
+Question this plot answers: Does work setting affect one's stress level?
+
+Interpretation: It appears that our synthetic dataset distributed the data to be even, just scaled at a different level. Interpreting it from an objective standpoint, we can see that they all follow the same shape and pattern, just at varying sums of people accounted for. This tells us that work environment has no impact on stress levels.
+
+------------------------------------------------------------------------
+
+# Push to GitHub AND submit link on Canvas!!
+
+Assignment is due Friday 9/25 at 11:59 pm.
