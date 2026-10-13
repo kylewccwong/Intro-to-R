@@ -1,0 +1,280 @@
+---
+title: "Assignment 5: Substance Use Treatment Mapping"
+subtitle: "STUDENT NAME"
+author: "Amber Camp"
+date: "`r Sys.Date()`"
+format: html
+editor: visual
+toc: true
+---
+
+## Overview
+
+Due: **Friday 10/2, 11:59pm**
+
+In this assignment, you will apply analytic and mapping skills to the 2024 TEDS-D dataset from SAMHSA.
+
+Refer to the following files for reference, though some of what is asked of you here will require logic beyond what we discussed in class:
+
+-   week06-treatment-mapping-part1.qmd
+
+-   week06-treatment-mapping-part2.qmd
+
+**Before you start:** keep the [codebook](https://www.samhsa.gov/data/system/files/media-puf-file/TEDS-D-2024-DS0001-info-codebook_v1_0.pdf) open in another tab. Every question below depends on knowing what the values in a column actually mean. Don't assume — look it up.
+
+**Time estimate:** about three-four hours total. Question 1 should take you ten minutes. If you are stuck on one thing for more than twenty minutes, ask your classmates or get in touch with me. Being stuck is normal. Staying stuck quietly by yourself is not :)
+
+## Load Packages and Data
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(janitor)
+library(sf) # "simple features" for spatial data
+library(urbnmapr) # access to US state/country shapefiles for mapping
+library(ggiraph) # makes ggplot charts interactive
+options(scipen = 99) # turns off scientific notation
+```
+
+This is the cleaned dataset you saved at the end of Part 1.
+
+```{r}
+#| label: read-data
+
+teds_d <- readRDS("data/teds_d_clean.rds")
+```
+
+## Question 1: Warm-up
+
+Before mapping anything, get oriented in the data.
+
+a)  Using `tabyl()`, show the breakdown of `reason` (reason for discharge). Which reason is most common, and what percentage of all discharges does it account for?
+
+b)  Make one bar chart showing the number of discharges by `services_d` (type of treatment service). Give it an informative title and axis labels.
+
+c)  In a sentence or two: what does the `reason` value "Transferred to another treatment program or facility" mean for our completion percentages? If a state transfers a lot of patients, would its completion rate look higher or lower than a state that transfers very few?
+
+> **Full credit:** a working `tabyl()`, a readable labeled bar chart, and a sentence or two showing you thought about part (c). There is no trick in this question!
+
+```{r}
+#| label: q1
+
+reason_tabyl <- teds_d %>% 
+  tabyl(reason) %>% 
+  arrange(desc(n)) %>% 
+  adorn_pct_formatting(digits = 2)
+
+print(reason_tabyl)
+```
+
+Most common reason is a completed treatment
+
+**Answer to (a): treatment completed**
+
+```{r}
+ggplot(data = teds_d, aes(y = fct_infreq(services_d))) +
+  geom_bar() +
+  scale_x_continuous(labels = scales::label_comma()) +
+  labs(title = "Treatment discharges by type of service, 2024 Teds-D",
+       x = "Number of Discharges",
+       y = "Type of Treatment Services") + 
+  theme_minimal()
+```
+
+**Answer to (b):** (produce a bar chart in the code chunk above)
+
+**Answer to (c):**
+
+Treatment completed rate would be lower because a transfer would be counted as simply non-completed. The treatment completed does not account for whether a transferred patient goes on to eventually complete the program, so a state that transfers a lot would have a lower completion rate than a state that transfers a few.
+
+## Question 2: Mapping no use at discharge
+
+Make **one [*interactive*]{.underline} map** with `ggiraph` showing, for each state, the percentage of [completed treatment]{.underline} episodes that ended with [no use at discharge]{.underline}.
+
+In other words: among the episodes where `reason` is "Treatment completed," what share had `freq1_d` equal to "no use"?
+
+Work through this in bite-sized steps, like we did in Part 2. You will need to filter, group, summarize, build an index, join, and plot. Write one step at a time and look at the result before moving on.
+
+### The denominator decision
+
+About a third of the `freq1_d` values in this dataset are "unknown." That means you have to decide what your denominator is, and there is more than one defensible answer:
+
+-   **All** completed episodes, counting "unknown" in the denominator, or
+
+-   Only completed episodes where frequency of use was **actually recorded**.
+
+Pick one. **Below your map, write one sentence saying which denominator you used and why.** Either choice can earn full credit. Missing description earns no points for this portion.
+
+### Your map must:
+
+-   be interactive (rendered with `girafe()`)
+
+-   show a tooltip with the state name and the percentage, rounded to two decimal places
+
+-   have a title and a legend label that say what is being shown
+
+-   handle states with no data honestly (remember Friday in class)
+
+> **Full credit:** one interactive map meeting the four requirements above, plus your denominator sentence. It does not have to be beautiful, only correct and readable.
+
+Kyle :
+
+Create new DF
+
+In this code chunk we create a new data frame by filtering the reason to treatment completed and removing all unknown outcomes for frequency of use at discharge. We then use group by to organize() by state and summarize() to create new variables that show (1) the total number of cases that ended in treatment completed and (2) the percentage of the total cases also had no use at discharge.
+
+```{r}
+no_use_by_state <- teds_d %>% 
+  filter(freq1_d != "unknown",
+         reason == "Treatment completed",) %>% 
+  group_by(stfips) %>% 
+  summarize(no_use_cases = sum(freq1_d == "no use"),
+            total_completed = n()) %>% 
+  mutate(percentage_no_use = (no_use_cases / total_completed) * 100)
+
+summary(no_use_by_state)
+
+```
+
+```{r}
+no_use_by_state <- no_use_by_state %>% 
+  mutate(state_fips = sprintf("%02d", stfips))
+
+states_map <- get_urbn_map(map = "states", sf = TRUE)
+
+no_use_map_data <- full_join(no_use_by_state, states_map, by = "state_fips") %>% 
+  mutate(percentage_bin = cut(percentage_no_use,
+                              breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100),
+                              include.lowest = TRUE),
+         percentage_bin = fct_na_value_to_level(percentage_bin, level = "No Data"))
+```
+
+```{r}
+no_use_map <- ggplot(no_use_map_data) +
+  geom_sf_interactive(aes(geometry = geometry,
+                          fill = percentage_bin,
+                          tooltip = paste("State:", state_name,
+                                          "<br>No use at discharge:", round(percentage_no_use, 2), "%")),
+                      color = "#ffffff", linewidth = 0.25) +
+  labs(fill = "% of completed episodes with no use",
+       title = "No Use at Discharge Among Completed Treatment Episodes",
+       subtitle = "TEDS-D 2024 (SAMHSA). Gray states (NA) reported no data.") +
+  scale_fill_viridis_d(option = "viridis", direction = -1, na.value = "grey80") +
+  coord_sf(datum = NA) +
+  theme_minimal() +
+  theme(panel.background = element_blank(),
+        plot.title = element_text(size = 8),
+        plot.subtitle = element_text(size = 6),
+        legend.text = element_text(size = 4),
+        legend.title = element_text(size = 5))
+
+girafe(ggobj = no_use_map)
+```
+
+**Denominator I used, and why:**
+
+## Question 3: Service type and length of stay
+
+Treatment outcomes can vary depending on the type of service a patient receives and how long they stay in treatment.
+
+Investigate how **completion rates** differ across **service type** (`services_d`) and **length of stay** (`los`).
+
+-   Create **two** visualizations: at least one focused on service type, and at least one focused on length of stay. These do not need to be maps, and they do not need to be interactive. Pick whatever chart type makes the pattern easiest to see.
+
+-   Then write a short summary (3-ish sentences, full grammatical sentences) explaining the main patterns you observe.
+
+**One warning:** look up `los` in the codebook *before* you calculate anything with it. Code that runs without an error can still give you a meaningless answer.
+
+> **Full credit:** two labeled visualizations that actually show the comparison you say they show, plus a summary that describes a real pattern in your own output. You are not graded on finding the "right" pattern. You are graded on whether your summary matches your charts.
+
+```{r}
+
+completion_by_service <- teds_d %>% 
+  group_by(services_d) %>% 
+  summarize(total_cases = n(),
+            completed_cases = sum(reason == "Treatment completed")) %>% 
+  mutate(percentage_completed = (completed_cases / total_cases) * 100)
+
+ggplot(completion_by_service, aes(x = percentage_completed,
+                                  y = fct_reorder(services_d, percentage_completed))) +
+  geom_col(fill = "4C9A6A") +
+  labs(title = "Completion Rate by Type of Treatment Service",
+       subtitle = "TEDS-D 2024",
+       x = "Percentages of Episodes Completed",
+       y = "Type of Treatment") +
+  theme_minimal()
+
+
+```
+
+This graph shows the success rate percentages of each treatment types offered. Based on our visual, we can see the types of treatment are almost binned in 3 sections: detox, rehab and ambulatory. It appears that the detox focused treatments are most successful, rehab treatments see some success, and ambulatory shows yields the lowest success rate of the three. It is hard to say whether these three binned categories play the biggest role due to each treatment type having other characteristics, but we can conclude that treatment type definitely plays a role in completed treatment.
+
+```{r}
+
+teds_d <- teds_d %>% 
+  mutate(los_group = cut(los,
+                         breaks = c(0, 7, 30, 33, 35, 37),
+                         labels = c("1-7 days", "8-30 days", "31-90 days",
+                                    "91-180 days", "Over 180 days")))
+
+completion_by_los <- teds_d %>% 
+  group_by(los_group) %>% 
+  summarize(total_cases = n(),
+            completed_cases = sum(reason == "Treatment completed")) %>% 
+  mutate(percentage_completed = (completed_cases / total_cases) * 100)
+
+ggplot(completion_by_los, aes(x = los_group, y = percentage_completed, fill = los_group)) +
+  geom_col(fill = "4C9A6A") +
+  labs(title = "Completion Rate by Length of Stay, TEDS-D 2024",
+       x = "Length of Stay",
+       y = "Percentage of Episodes Completed") +
+  theme_minimal()
+```
+
+**Summary:**
+
+Compared to the other visualization, we can see a much more similar outcome for treatments completed based on their length of stay. It doesn't look like there is a super significant correlation from this graph alone, but we can see that there is a slight decrease in completed treatment episodes as the amount of time increases. It's not a big decrease, so it could potentially be insignificant.
+
+## Extra Credit (optional, up to 2 pts)
+
+#### Again, this is meant to *stretch* you, not *stress* you!
+
+Make one visualization that shows service type and length of stay **together**–that is, how completion rate varies across both at once. Faceting is one way, but there are others.
+
+Then, in a sentence, say what this combined view shows that your two separate charts in Question 3 could not.
+
+```{r}
+#| label: extra-credit
+#| label: extra-credit
+
+completion_of_both <- teds_d %>% 
+  group_by(services_d, los_group) %>% 
+  summarize(total_cases = n(),
+            completed_cases = sum(reason == "Treatment completed")) %>% 
+  mutate(percentage_completed = (completed_cases / total_cases) * 100)
+
+completion_tile <- ggplot(completion_of_both, aes(x = los_group, y = services_d, fill = percentage_completed)) +
+  geom_tile_interactive(aes(tooltip = paste("Service:", services_d,
+                                            "<br>Length of stay:", los_group,
+                                            "<br>Completed:", round(percentage_completed, 2), "%"))) +
+  labs(title = "Completion Rate by Service Type and Length of Stay, TEDS-D 2024",
+       x = "Length of Stay",
+       y = "Type of Treatment Service",
+       fill = "% Completed") +
+  theme_minimal()
+
+girafe(ggobj = completion_tile)
+```
+
+**What the combined view adds:**
+
+This combination actually changes our conclusion. Length of stay and treatment type are actually intertwined more than I originally thought. There is no catch all rule when determining the treatments completed against the length of stay and treatment type. The heat map actually showed that there is a sweet spot for length of stay depending on treatment type.
+
+------------------------------------------------------------------------
+
+## Push to GitHub AND submit link on Canvas!
+
+Assignment is due **Friday 10/2, 11:59pm**.
